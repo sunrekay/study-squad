@@ -146,7 +146,7 @@
             <div class="dropzone-icon" id="dropzoneIcon">🎙️</div>
             <div class="dropzone-title">Нажми для выбора файла</div>
             <div class="dropzone-sub">До 500 МБ · multipart upload для больших файлов</div>
-            <div class="dropzone-formats">Аудио: MP3 · WAV · M4A · OGG &nbsp;|&nbsp; Видео: MP4 · MOV · AVI · MKV</div>
+            <div class="dropzone-formats">Аудио: MP3 · WAV · M4A · OGG &nbsp;|&nbsp; Видео: MP4 · MOV · AVI · MKV · WEBM</div>
           </div>
           <div class="file-selected" id="fileSelected">
             <span id="fileTypeEmoji">📎</span>
@@ -187,8 +187,8 @@
 
   <script>
     const CONFIG = { API_URL: 'https://d5dl1rb13ng0aicdmdk1.hsvi2zuh.apigw.yandexcloud.net' }
-    const MULTIPART_THRESHOLD = 10 * 1024 * 1024   // файлы > 10 МБ грузим multipart
-    const PART_SIZE = 10 * 1024 * 1024              // размер одной части
+    const MULTIPART_THRESHOLD = 10 * 1024 * 1024
+    const PART_SIZE = 10 * 1024 * 1024
     const AUDIO_EXTS = ['mp3', 'wav', 'm4a', 'ogg', 'webm', 'flac', 'aac']
     const VIDEO_EXTS = ['mp4', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'mpeg', 'mpg']
 
@@ -238,7 +238,7 @@
       document.getElementById('fileSize').textContent = (file.size / 1024 / 1024).toFixed(1) + ' МБ'
       const badge = document.getElementById('fileTypeBadge')
       badge.textContent = type === 'video' ? 'VIDEO' : 'AUDIO'
-      badge.className = `file-type-badge ${type === 'video' ? 'file-type-video' : 'file-type-audio'}`
+      badge.className = 'file-type-badge ' + (type === 'video' ? 'file-type-video' : 'file-type-audio')
       document.getElementById('fileSelected').classList.add('visible')
       dropzone.style.display = 'none'
     }
@@ -258,12 +258,10 @@
       if (eta !== undefined) document.getElementById('progressEta').textContent = eta || ''
     }
 
-    // ── Загрузка одним куском (маленькие файлы) ──
     function uploadSingle(url, file) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
         let lastLoaded = 0, lastTime = Date.now()
-
         xhr.upload.addEventListener('progress', (e) => {
           if (!e.lengthComputable) return
           const pct = Math.round(e.loaded / e.total * 100)
@@ -273,10 +271,10 @@
             const mbps = (e.loaded - lastLoaded) / elapsed / 1024 / 1024
             speed = mbps.toFixed(1) + ' МБ/с'
             const remaining = (e.total - e.loaded) / (mbps * 1024 * 1024)
-            eta = remaining < 60 ? `~${Math.round(remaining)} сек` : `~${Math.round(remaining / 60)} мин`
+            eta = remaining < 60 ? ('~' + Math.round(remaining) + ' сек') : ('~' + Math.round(remaining / 60) + ' мин')
             lastLoaded = e.loaded; lastTime = now
           }
-          setProgress(pct, `${(e.loaded/1024/1024).toFixed(0)} / ${(e.total/1024/1024).toFixed(0)} МБ`, speed, eta)
+          setProgress(pct, (e.loaded/1024/1024).toFixed(0) + ' / ' + (e.total/1024/1024).toFixed(0) + ' МБ', speed, eta)
         })
         xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)))
         xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
@@ -286,61 +284,45 @@
       })
     }
 
-    // ── Multipart upload (большие файлы) ──
     async function uploadMultipart(file, title, subjectId, shareGroup) {
       const totalMB = (file.size / 1024 / 1024).toFixed(0)
       setProgress(0, 'Инициируем загрузку...', '', '')
 
-      // 1. Создаём multipart upload и получаем presigned URLs для каждой части
-      const initRes = await fetch(`${CONFIG.API_URL}/presign-multipart`, {
+      const initRes = await fetch(CONFIG.API_URL + '/presign-multipart', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          file_size: file.size,
-          title,
-          subject_id: subjectId || null,
-          share_group: shareGroup || null
-        })
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, file_size: file.size, title, subject_id: subjectId || null, share_group: shareGroup || null })
       })
       const { upload_id, record_id, s3_key, part_urls, part_size } = await initRes.json()
 
-      const parts = []
       let uploadedBytes = 0
       const startTime = Date.now()
 
-      // 2. Загружаем каждую часть
       for (const { part_number, url } of part_urls) {
         const start = (part_number - 1) * part_size
         const end = Math.min(start + part_size, file.size)
         const chunk = file.slice(start, end)
 
-        const etag = await uploadPart(url, chunk, (loaded) => {
+        await uploadPart(url, chunk, (loaded) => {
           const total = uploadedBytes + loaded
           const pct = Math.round(total / file.size * 100)
           const elapsed = (Date.now() - startTime) / 1000
           const mbps = elapsed > 0 ? (total / 1024 / 1024 / elapsed) : 0
           const remaining = mbps > 0 ? (file.size - total) / 1024 / 1024 / mbps : 0
-          const eta = remaining < 60 ? `~${Math.round(remaining)} сек` : `~${Math.round(remaining / 60)} мин`
-          setProgress(
-            pct,
-            `Часть ${part_number}/${part_urls.length} · ${(total/1024/1024).toFixed(0)} / ${totalMB} МБ`,
-            mbps.toFixed(1) + ' МБ/с',
-            eta
-          )
+          const eta = remaining < 60 ? ('~' + Math.round(remaining) + ' сек') : ('~' + Math.round(remaining / 60) + ' мин')
+          setProgress(pct, 'Часть ' + part_number + '/' + part_urls.length + ' · ' + (total/1024/1024).toFixed(0) + ' / ' + totalMB + ' МБ', mbps.toFixed(1) + ' МБ/с', eta)
         })
 
         uploadedBytes += chunk.size
-        parts.push({ part_number, etag })
       }
 
       setProgress(99, 'Завершаем загрузку...', '', '')
 
-      // 3. Завершаем multipart upload
-      await fetch(`${CONFIG.API_URL}/complete-multipart`, {
+      // ETags сервер достаёт сам через list_parts — не передаём
+      await fetch(CONFIG.API_URL + '/complete-multipart', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ s3_key, upload_id, parts })
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ s3_key, upload_id })
       })
 
       return record_id
@@ -349,17 +331,8 @@
     function uploadPart(url, chunk, onProgress) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) onProgress(e.loaded)
-        })
-        xhr.addEventListener('load', () => {
-          if (xhr.status < 300) {
-            const etag = xhr.getResponseHeader('ETag') || xhr.getResponseHeader('etag') || ''
-            resolve(etag) // Yandex S3 нужны кавычки в ETag
-          } else {
-            reject(new Error('HTTP ' + xhr.status))
-          }
-        })
+        xhr.upload.addEventListener('progress', (e) => { if (e.lengthComputable) onProgress(e.loaded) })
+        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)))
         xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
         xhr.open('PUT', url)
         xhr.send(chunk)
@@ -379,14 +352,12 @@
 
       try {
         if (selectedFile.size > MULTIPART_THRESHOLD) {
-          // Большой файл — multipart
           await uploadMultipart(selectedFile, title, subjectId, shareGroup)
         } else {
-          // Маленький файл — обычный presign
           setProgress(5, 'Получаем ссылку...', '', '')
           const res = await fetch(
-            `${CONFIG.API_URL}/presign?filename=${crypto.randomUUID()}.${selectedFile.name.split('.').pop().toLowerCase()}&title=${encodeURIComponent(title)}&subject_id=${subjectId}&share_group=${shareGroup}`,
-            { headers: { Authorization: `Bearer ${token}` } }
+            CONFIG.API_URL + '/presign?filename=' + crypto.randomUUID() + '.' + selectedFile.name.split('.').pop().toLowerCase() + '&title=' + encodeURIComponent(title) + '&subject_id=' + subjectId + '&share_group=' + shareGroup,
+            { headers: { Authorization: 'Bearer ' + token } }
           )
           const { upload_url } = await res.json()
           await uploadSingle(upload_url, selectedFile)

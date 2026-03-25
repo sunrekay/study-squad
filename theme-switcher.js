@@ -10,23 +10,18 @@
   const applyTheme = (theme) => {
     root.setAttribute('data-theme', theme);
     localStorage.setItem(STORAGE_KEY, theme);
-    const toggle = document.querySelector('.theme-toggle');
-    if (!toggle) return;
-    const isLight = theme === 'light';
-    toggle.classList.toggle('is-light', isLight);
-    toggle.setAttribute('aria-pressed', String(isLight));
+    document.querySelectorAll('.theme-toggle').forEach(toggle => {
+      const isLight = theme === 'light';
+      toggle.classList.toggle('is-light', isLight);
+      toggle.setAttribute('aria-pressed', String(isLight));
+    });
   };
 
-  const ensureTheme = () => {
-    if (!root.getAttribute('data-theme')) {
-      root.setAttribute('data-theme', readTheme());
-    }
-  };
-
-  const buildToggle = () => {
+  const buildToggle = (id) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'theme-toggle';
+    if (id) btn.id = id;
     btn.setAttribute('aria-label', 'Переключить тему');
     btn.setAttribute('title', 'Переключить тему');
     btn.innerHTML = [
@@ -36,81 +31,59 @@
       '<span class="theme-toggle-thumb" aria-hidden="true"></span>',
       '</span>'
     ].join('');
-
     btn.addEventListener('click', () => {
       const current = root.getAttribute('data-theme') || 'dark';
       applyTheme(current === 'dark' ? 'light' : 'dark');
     });
-
     return btn;
   };
 
-  const placeToggle = (toggle) => {
-    const isAuth = /(?:^|\/)(?:index|callback)\.html$/.test(location.pathname) || location.pathname === '/' || location.pathname === '';
-    const mobileHeader = document.querySelector('.mobile-header');
-    const pageHeader = document.querySelector('.page-header');
-
-    toggle.classList.remove('theme-toggle--floating', 'theme-toggle--inline');
-    document.body.classList.remove('theme-toggle-shift');
-
-    if (isAuth) {
-      document.body.appendChild(toggle);
-      toggle.classList.add('theme-toggle--floating');
-      return;
-    }
-
-    const mobileShown = !!mobileHeader && window.getComputedStyle(mobileHeader).display !== 'none';
-
-    if (mobileShown) {
-      document.body.appendChild(toggle);
-      toggle.classList.add('theme-toggle--floating');
-      document.body.classList.add('theme-toggle-shift');
-      return;
-    }
-
-    if (pageHeader) {
-      let slot = pageHeader.querySelector('.theme-toggle-slot');
-      if (!slot) {
-        slot = document.createElement('div');
-        slot.className = 'theme-toggle-slot';
-        pageHeader.appendChild(slot);
-      }
-      slot.appendChild(toggle);
-      toggle.classList.add('theme-toggle--inline');
-      return;
-    }
-
-    const main = document.querySelector('.main');
-    if (main) {
-      let slot = main.querySelector('.theme-toggle-slot--row');
-      if (!slot) {
-        slot = document.createElement('div');
-        slot.className = 'theme-toggle-slot theme-toggle-slot--row';
-        main.prepend(slot);
-      }
-      slot.appendChild(toggle);
-      toggle.classList.add('theme-toggle--inline');
-      return;
-    }
-
-    document.body.appendChild(toggle);
-    toggle.classList.add('theme-toggle--floating');
-  };
-
   const init = () => {
-    ensureTheme();
-
-    let toggle = document.querySelector('.theme-toggle');
-    if (!toggle) {
-      toggle = buildToggle();
-    }
-
-    placeToggle(toggle);
+    // Применяем сохранённую тему
     applyTheme(readTheme());
 
-    window.addEventListener('resize', () => {
-      placeToggle(toggle);
-    });
+    // ── Десктоп: кнопка в sidebar-bottom или page-header ──
+    const sidebarBottom = document.querySelector('.sidebar-bottom');
+    const pageHeader = document.querySelector('.page-header');
+
+    if (!document.querySelector('.theme-toggle--desktop')) {
+      const desktopToggle = buildToggle('theme-toggle-desktop');
+      desktopToggle.classList.add('theme-toggle--desktop');
+
+      if (sidebarBottom) {
+        sidebarBottom.insertAdjacentElement('afterbegin', desktopToggle);
+      } else if (pageHeader) {
+        let slot = pageHeader.querySelector('.theme-toggle-slot');
+        if (!slot) {
+          slot = document.createElement('div');
+          slot.className = 'theme-toggle-slot';
+          pageHeader.appendChild(slot);
+        }
+        slot.appendChild(desktopToggle);
+      } else {
+        desktopToggle.classList.add('theme-toggle--floating');
+        document.body.appendChild(desktopToggle);
+      }
+    }
+
+    // ── Мобилка: кнопка в mobile-header ──
+    const mobileHeader = document.querySelector('.mobile-header');
+    if (mobileHeader && !document.querySelector('.theme-toggle--mobile')) {
+      const mobileToggle = buildToggle('theme-toggle-mobile');
+      mobileToggle.classList.add('theme-toggle--mobile');
+
+      // Ищем пустой слот справа (обычно div с width:60px)
+      const rightSlot = mobileHeader.lastElementChild;
+      if (rightSlot && rightSlot !== mobileHeader.firstElementChild) {
+        rightSlot.innerHTML = '';
+        rightSlot.appendChild(mobileToggle);
+      } else {
+        mobileHeader.appendChild(mobileToggle);
+      }
+    }
+
+    // Синхронизируем все кнопки с текущей темой
+    applyTheme(readTheme());
   };
 
   if (document.readyState === 'loading') {
