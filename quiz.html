@@ -117,13 +117,6 @@
       <a href="#" class="nav-item nav-disabled" aria-disabled="true" tabindex="-1"><span class="icon">📚</span> Предметы</a>
       <a href="#" class="nav-item nav-disabled" aria-disabled="true" tabindex="-1"><span class="icon">👥</span> Моя группа</a>
       <a href="quizzes.html" class="nav-item"><span class="icon">🧠</span> Квизы</a>
-      <div class="sidebar-bottom">
-        <div class="user-block">
-          <div class="avatar" id="avatarInitial">?</div>
-          <div class="user-info"><div class="user-name" id="userName">...</div></div>
-        </div>
-        <button class="logout-btn" onclick="logout()">Выйти</button>
-      </div>
     </aside>
 
     <main class="main">
@@ -181,13 +174,8 @@
 
   <script>
     const CONFIG = { API_URL: 'https://d5dl1rb13ng0aicdmdk1.hsvi2zuh.apigw.yandexcloud.net' }
-    const token = localStorage.getItem('token')
-    const user = JSON.parse(localStorage.getItem('user') || 'null')
-    if (!token) { window.location.href = 'index.html' }
-    if (user) {
-      document.getElementById('userName').textContent = user.name || user.email
-      document.getElementById('avatarInitial').textContent = (user.name || user.email || '?')[0].toUpperCase()
-    }
+    let userId = localStorage.getItem('user_id')
+    if (!userId) { userId = crypto.randomUUID(); localStorage.setItem('user_id', userId) }
 
     const params = new URLSearchParams(window.location.search)
     const quizId = params.get('id')
@@ -197,7 +185,7 @@
 
     async function loadQuiz() {
       try {
-        const res = await fetch(`${CONFIG.API_URL}/quizzes/${quizId}`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${CONFIG.API_URL}/quizzes/${quizId}`, { headers: { 'X-User-Id': userId } })
         const data = await res.json()
         questions = data.questions
         document.getElementById('quizTitle').textContent = data.title
@@ -280,7 +268,6 @@
       renderQuestion()
     }
 
-    function logout() { localStorage.clear(); window.location.href = 'index.html' }
     loadQuiz()
   </script>
 </body>

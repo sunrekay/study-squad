@@ -138,13 +138,6 @@
       <a href="#" class="nav-item nav-disabled" aria-disabled="true" tabindex="-1"><span class="icon">📚</span> Предметы</a>
       <a href="#" class="nav-item nav-disabled" aria-disabled="true" tabindex="-1"><span class="icon">👥</span> Моя группа</a>
       <a href="quizzes.html" class="nav-item"><span class="icon">🧠</span> Квизы</a>
-      <div class="sidebar-bottom">
-        <div class="user-block">
-          <div class="avatar" id="avatarInitial">?</div>
-          <div class="user-info"><div class="user-name" id="userName">...</div></div>
-        </div>
-        <button class="logout-btn" onclick="logout()">Выйти</button>
-      </div>
     </aside>
 
     <main class="main">
@@ -177,13 +170,8 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script>
     const CONFIG = { API_URL: 'https://d5dl1rb13ng0aicdmdk1.hsvi2zuh.apigw.yandexcloud.net' }
-    const token = localStorage.getItem('token')
-    const user = JSON.parse(localStorage.getItem('user') || 'null')
-    if (!token) { window.location.href = 'index.html' }
-    if (user) {
-      document.getElementById('userName').textContent = user.name || user.email
-      document.getElementById('avatarInitial').textContent = (user.name || user.email || '?')[0].toUpperCase()
-    }
+    let userId = localStorage.getItem('user_id')
+    if (!userId) { userId = crypto.randomUUID(); localStorage.setItem('user_id', userId) }
 
     const params = new URLSearchParams(window.location.search)
     const id = params.get('id')
@@ -193,7 +181,7 @@
 
     async function loadTranscription() {
       try {
-        const res = await fetch(`${CONFIG.API_URL}/transcriptions/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+        const res = await fetch(`${CONFIG.API_URL}/transcriptions/${id}`, { headers: { 'X-User-Id': userId } })
         if (!res.ok) throw new Error('not found')
         const data = await res.json()
         render(data)
@@ -328,7 +316,7 @@
       try {
         const res = await fetch(`${CONFIG.API_URL}/quizzes`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          headers: { 'X-User-Id': userId, 'Content-Type': 'application/json' },
           body: JSON.stringify({ transcription_id: id, title: 'Квиз по лекции' })
         })
         const data = await res.json()
@@ -340,7 +328,6 @@
       }
     }
 
-    function logout() { localStorage.clear(); window.location.href = 'index.html' }
     loadTranscription()
   </script>
 </body>
