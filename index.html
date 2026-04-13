@@ -2,16 +2,330 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>StudySquad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudySquad — автоматическая транскрипция лекций и квизы</title>
   <script>document.documentElement.setAttribute("data-theme","dark");</script>
   <!-- Yandex.Metrika counter -->
   <script type="text/javascript">(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=108513695','ym');ym(108513695,'init',{ssr:true,webvisor:true,clickmap:true,accurateTrackBounce:true,trackLinks:true});</script>
   <noscript><div><img src="https://mc.yandex.ru/watch/108513695" style="position:absolute;left:-9999px;" alt=""/></div></noscript>
   <!-- /Yandex.Metrika counter -->
-  <script>
-    if (!localStorage.getItem('user_id')) { localStorage.setItem('user_id', crypto.randomUUID()) }
-    window.location.href = 'dashboard.html'
-  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700&family=Oranienbaum&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07080c; --surface: #10131b; --surface2: #171c27; --border: rgba(166,177,204,0.32);
+      --accent: #b7d8d4; --accent2: #b8abce; --text: #f5f7ff; --muted: #a2a9bc;
+      --radius: 16px; --success: #4ade80; --warning: #fbbf24; --error: #f87171;
+      --font-display: 'Oranienbaum', serif; --font-ui: 'Manrope', sans-serif; --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-ui); }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 60% 40% at 10% 0%, rgba(183,216,212,0.08) 0%, transparent 50%),
+                  radial-gradient(ellipse 40% 30% at 90% 100%, rgba(184,171,206,0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse 30% 20% at 50% 50%, rgba(183,216,212,0.03) 0%, transparent 60%),
+                  var(--bg);
+      pointer-events: none;
+    }
+
+    .page { position: relative; z-index: 1; }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(7,8,12,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(166,177,204,0.10);
+    }
+    .header-logo { font-family: var(--font-display); font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .header-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 600;
+      font-family: var(--font-ui); text-decoration: none; cursor: pointer; border: none;
+      color: #0d1218;
+      background: linear-gradient(145deg, rgba(183,216,212,0.88), rgba(184,171,206,0.72));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(6,10,18,0.34);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .header-cta:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 12px 28px rgba(183,216,212,0.2); }
+
+    /* ── Hero ── */
+    .hero {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      padding: 100px 24px 80px; gap: 28px;
+      max-width: 800px; margin: 0 auto;
+    }
+    .hero-badge {
+      font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--accent);
+      padding: 6px 16px; border-radius: 100px;
+      background: rgba(183,216,212,0.08); border: 1px solid rgba(183,216,212,0.15);
+    }
+    .hero-title { font-family: var(--font-display); font-size: clamp(36px, 6vw, 56px); line-height: 1.15; letter-spacing: -1px; }
+    .hero-title .highlight {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sub { font-size: 18px; color: var(--muted); max-width: 560px; line-height: 1.6; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+    .btn-hero {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 600;
+      font-family: var(--font-ui); text-decoration: none; cursor: pointer; border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-hero-primary {
+      color: #0d1218;
+      background: linear-gradient(145deg, rgba(183,216,212,0.88), rgba(184,171,206,0.72));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(6,10,18,0.34);
+    }
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 12px 28px rgba(183,216,212,0.2); }
+    .btn-hero-secondary {
+      color: var(--text); background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+
+    /* ── Sections ── */
+    .section { padding: 80px 24px; max-width: 1080px; margin: 0 auto; }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-label {
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+    }
+    .section-title { font-family: var(--font-display); font-size: clamp(24px, 4vw, 36px); letter-spacing: -0.5px; }
+
+    /* ── How it works (Steps) ── */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step-card {
+      position: relative; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 32px 24px; display: flex; flex-direction: column; gap: 16px;
+      overflow: hidden;
+    }
+    .step-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0.6;
+      border-radius: 16px 16px 0 0;
+    }
+    .step-num {
+      font-family: var(--font-display); font-size: 40px; font-weight: 700;
+      background: linear-gradient(135deg, var(--text), var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1;
+    }
+    .step-icon { font-size: 36px; margin-bottom: 4px; }
+    .step-title { font-size: 18px; font-weight: 700; }
+    .step-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* ── Features grid ── */
+    .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .feature-card {
+      position: relative; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px 24px; display: flex; gap: 16px; align-items: flex-start;
+      overflow: hidden; transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(183,216,212,0.22); transform: translateY(-2px); }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+      background: rgba(183,216,212,0.08); border: 1px solid rgba(183,216,212,0.08);
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .feature-body { flex: 1; }
+    .feature-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* ── Formats ── */
+    .formats-wrap { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 32px; }
+    .format-tag {
+      font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.03em;
+      padding: 8px 18px; border-radius: 100px;
+      background: rgba(183,216,212,0.06); border: 1px solid rgba(183,216,212,0.12);
+      color: var(--accent);
+    }
+
+    /* ── CTA bottom ── */
+    .cta-section {
+      padding: 80px 24px 100px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    .cta-title { font-family: var(--font-display); font-size: clamp(24px, 4vw, 36px); letter-spacing: -0.5px; }
+    .cta-sub { font-size: 16px; color: var(--muted); max-width: 480px; line-height: 1.6; }
+
+    /* ── Footer ── */
+    .footer {
+      border-top: 1px solid rgba(166,177,204,0.10);
+      padding: 24px 40px; text-align: center;
+      font-size: 13px; color: var(--muted);
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    .hero-badge { animation: fadeUp 0.5s ease both; }
+    .hero-title { animation: fadeUp 0.5s ease both 0.1s; }
+    .hero-sub { animation: fadeUp 0.5s ease both 0.2s; }
+    .hero-actions { animation: fadeUp 0.5s ease both 0.3s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .header { padding: 14px 20px; }
+      .hero { padding: 60px 20px 50px; }
+      .section { padding: 50px 20px; }
+      .steps { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .cta-section { padding: 50px 20px 80px; }
+      .footer { padding: 20px; }
+    }
+  </style>
+  <link rel="stylesheet" href="theme-3-1.css" />
 </head>
-<body></body>
+<body>
+  <div class="bg"></div>
+
+  <div class="page">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-dot"></div>
+        StudySquad
+      </div>
+      <a href="dashboard.html" class="header-cta">Открыть приложение</a>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">Бесплатный сервис для студентов</div>
+      <h1 class="hero-title">Превращаем лекции в <span class="highlight">текст и квизы</span> автоматически</h1>
+      <p class="hero-sub">Загрузите аудио- или видеозапись лекции, получите полную текстовую расшифровку и создайте квиз для подготовки к экзамену за пару кликов.</p>
+      <div class="hero-actions">
+        <a href="dashboard.html" class="btn-hero btn-hero-primary">Начать работу</a>
+        <a href="#how" class="btn-hero btn-hero-secondary">Как это работает</a>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="section-header">
+        <div class="section-label">Как это работает</div>
+        <h2 class="section-title">Три простых шага</h2>
+      </div>
+      <div class="steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-icon">🎙️</div>
+          <div class="step-title">Загрузите запись</div>
+          <div class="step-desc">Перетащите файл или выберите его вручную. Поддерживаются аудио и видео форматы до 500 МБ. Укажите название лекции и предмет.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-icon">📝</div>
+          <div class="step-title">Получите транскрипцию</div>
+          <div class="step-desc">Система автоматически распознает речь с помощью OpenAI Whisper и создаст текстовую расшифровку. Статус отображается в реальном времени на дашборде.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-icon">🧠</div>
+          <div class="step-title">Пройдите квиз</div>
+          <div class="step-desc">На основе транскрипции GPT-4o-mini сгенерирует набор вопросов с вариантами ответов. Проходите квиз и проверяйте свои знания перед экзаменом.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="section-header">
+        <div class="section-label">Возможности</div>
+        <h2 class="section-title">Всё для подготовки к экзаменам</h2>
+      </div>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">🎬</div>
+          <div class="feature-body">
+            <div class="feature-title">Аудио и видео</div>
+            <div class="feature-desc">Загружайте записи в любом популярном формате: MP3, WAV, M4A, OGG, MP4, MOV, AVI, MKV и другие.</div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-body">
+            <div class="feature-title">Быстрая обработка</div>
+            <div class="feature-desc">Файлы загружаются напрямую в облако. Транскрипция запускается автоматически сразу после загрузки.</div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <div class="feature-body">
+            <div class="feature-title">Копирование текста</div>
+            <div class="feature-desc">Скопируйте расшифровку в один клик, чтобы вставить в конспект, заметки или документ.</div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-body">
+            <div class="feature-title">Генерация квизов</div>
+            <div class="feature-desc">Создавайте тесты по материалу лекции. Вопросы с четырьмя вариантами ответов и мгновенной проверкой.</div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-body">
+            <div class="feature-title">Результаты и статистика</div>
+            <div class="feature-desc">Отслеживайте прогресс на дашборде: количество лекций, готовых транскрипций и пройденных квизов.</div>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <div class="feature-body">
+            <div class="feature-title">Мобильная версия</div>
+            <div class="feature-desc">Интерфейс адаптирован для телефонов и планшетов. Загружайте лекции и проходите квизы с любого устройства.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supported formats -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-label">Форматы</div>
+        <h2 class="section-title">Поддерживаемые форматы файлов</h2>
+      </div>
+      <div class="formats-wrap">
+        <span class="format-tag">MP3</span>
+        <span class="format-tag">WAV</span>
+        <span class="format-tag">M4A</span>
+        <span class="format-tag">OGG</span>
+        <span class="format-tag">WEBM</span>
+        <span class="format-tag">MP4</span>
+        <span class="format-tag">MOV</span>
+        <span class="format-tag">AVI</span>
+        <span class="format-tag">MKV</span>
+        <span class="format-tag">FLV</span>
+        <span class="format-tag">WMV</span>
+      </div>
+      <p style="text-align:center; color:var(--muted); margin-top:16px; font-size:14px;">Максимальный размер файла — 500 МБ</p>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2 class="cta-title">Готовы начать?</h2>
+      <p class="cta-sub">Регистрация не требуется. Загрузите первую лекцию и получите расшифровку уже через несколько минут.</p>
+      <a href="dashboard.html" class="btn-hero btn-hero-primary">Перейти в приложение</a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      StudySquad — автоматическая транскрипция лекций и генерация квизов
+    </footer>
+  </div>
+
+  <script>
+    if (!localStorage.getItem('user_id')) { localStorage.setItem('user_id', crypto.randomUUID()); }
+  </script>
+</body>
 </html>
