@@ -65,6 +65,9 @@
     .btn-submit { padding: 14px 28px; background: var(--accent); color: white; border: none; border-radius: 10px; font-family: var(--font-ui); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
     .btn-submit:hover:not(:disabled) { background: #8fbeb9; transform: translateY(-1px); }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-cancel { display: none; padding: 12px 28px; background: none; border: 1px solid rgba(248,113,113,0.3); border-radius: 10px; color: var(--error); font-family: var(--font-ui); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; width: 100%; }
+    .btn-cancel.visible { display: block; }
+    .btn-cancel:hover { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.5); }
     .success-block { display: none; background: rgba(74,222,128,0.06); border: 1px solid rgba(74,222,128,0.2); border-radius: var(--radius); padding: 24px; text-align: center; flex-direction: column; align-items: center; gap: 12px; }
     .success-block.visible { display: flex; }
     .success-icon { font-size: 36px; }
@@ -168,6 +171,7 @@
           </div>
         </div>
         <button class="btn-submit" id="submitBtn" onclick="handleUpload()">🚀 Загрузить и транскрибировать</button>
+        <button class="btn-cancel" id="cancelBtn" onclick="cancelUpload()">Отменить загрузку</button>
       </div>
       <div class="success-block" id="successBlock">
         <div class="success-icon">✅</div>
@@ -200,6 +204,8 @@
       document.getElementById('avatarInitial').textContent = (user.name || user.email || '?')[0].toUpperCase()
     }
     let selectedFile = null
+    let activeXhr = null
+    let uploadCancelled = false
 
     async function loadSubjects() {
       try {
@@ -261,6 +267,7 @@
     function uploadSingle(url, file) {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest()
+        activeXhr = xhr
         let lastLoaded = 0, lastTime = Date.now()
         xhr.upload.addEventListener('progress', (e) => {
           if (!e.lengthComputable) return
@@ -276,8 +283,9 @@
           }
           setProgress(pct, (e.loaded/1024/1024).toFixed(0) + ' / ' + (e.total/1024/1024).toFixed(0) + ' МБ', speed, eta)
         })
-        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)))
-        xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+        xhr.addEventListener('load', () => { activeXhr = null; xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)) })
+        xhr.addEventListener('error', () => { activeXhr = null; reject(new Error('Ошибка сети')) })
+        xhr.addEventListener('abort', () => { activeXhr = null; reject(new Error('Загрузка отменена')) })
         xhr.open('PUT', url)
         xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
         xhr.send(file)
@@ -330,10 +338,13 @@
 
     function uploadPart(url, chunk, onProgress) {
       return new Promise((resolve, reject) => {
+        if (uploadCancelled) { reject(new Error('Загрузка отменена')); return }
         const xhr = new XMLHttpRequest()
+        activeXhr = xhr
         xhr.upload.addEventListener('progress', (e) => { if (e.lengthComputable) onProgress(e.loaded) })
-        xhr.addEventListener('load', () => xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)))
-        xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+        xhr.addEventListener('load', () => { activeXhr = null; xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)) })
+        xhr.addEventListener('error', () => { activeXhr = null; reject(new Error('Ошибка сети')) })
+        xhr.addEventListener('abort', () => { activeXhr = null; reject(new Error('Загрузка отменена')) })
         xhr.open('PUT', url)
         xhr.send(chunk)
       })
@@ -348,7 +359,9 @@
 
       const btn = document.getElementById('submitBtn')
       btn.disabled = true; btn.textContent = 'Загружаем...'
+      uploadCancelled = false
       document.getElementById('progressBlock').classList.add('visible')
+      document.getElementById('cancelBtn').classList.add('visible')
 
       try {
         if (selectedFile.size > MULTIPART_THRESHOLD) {
@@ -364,16 +377,27 @@
         }
 
         setProgress(100, 'Готово!', '', '')
+        document.getElementById('cancelBtn').classList.remove('visible')
         setTimeout(() => {
           document.getElementById('uploadForm').style.display = 'none'
           document.getElementById('successBlock').classList.add('visible')
         }, 400)
 
       } catch (e) {
-        alert('Ошибка при загрузке: ' + e.message)
+        document.getElementById('cancelBtn').classList.remove('visible')
+        if (uploadCancelled) {
+          setProgress(0, '', '', '')
+        } else {
+          alert('Ошибка при загрузке: ' + e.message)
+        }
         btn.disabled = false; btn.textContent = '🚀 Загрузить и транскрибировать'
         document.getElementById('progressBlock').classList.remove('visible')
       }
+    }
+
+    function cancelUpload() {
+      uploadCancelled = true
+      if (activeXhr) { activeXhr.abort(); activeXhr = null }
     }
 
     function logout() { localStorage.clear(); window.location.href = 'index.html' }
