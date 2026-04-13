@@ -45,9 +45,9 @@
     .btn-secondary:hover { background: var(--surface2); }
 
     /* ── Tabs ── */
-    .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; }
-    .tab-btn { padding: 8px 20px; border-radius: 8px; border: none; background: none; color: var(--muted); font-family: var(--font-ui); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-    .tab-btn.active { background: var(--surface2); color: var(--text); }
+    .tabs { display: flex; gap: 4px; background: rgba(16,19,27,0.7); border: 1px solid rgba(166,177,204,0.10); border-radius: 12px; padding: 4px; width: fit-content; }
+    .tab-btn { padding: 8px 22px; border-radius: 8px; border: none; background: none; color: var(--muted); font-family: var(--font-ui); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: rgba(183,216,212,0.10); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
     .tab-btn:hover:not(.active) { color: var(--text); }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
@@ -56,8 +56,8 @@
     .transcript-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .transcript-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     .transcript-title { font-size: 14px; font-weight: 600; }
-    .copy-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: var(--font-ui); font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-btn { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: none; border: 1px solid rgba(166,177,204,0.12); border-radius: 8px; color: var(--muted); font-family: var(--font-ui); font-size: 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .copy-btn:hover { border-color: rgba(183,216,212,0.3); color: var(--accent); background: rgba(183,216,212,0.05); }
     .transcript-body { padding: 24px; font-size: 15px; line-height: 1.8; color: var(--text); white-space: pre-wrap; max-height: 500px; overflow-y: auto; font-family: var(--font-mono); font-size: 13px; }
     .transcript-body::-webkit-scrollbar { width: 6px; }
     .transcript-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

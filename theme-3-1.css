@@ -6,7 +6,7 @@
   --bg: #07080c;
   --surface: #10131b;
   --surface2: #171c27;
-  --border: rgba(166,177,204,0.32);
+  --border: rgba(166,177,204,0.18);
   --accent: #b7d8d4;
   --accent2: #b8abce;
   --text: #f5f7ff;
@@ -17,14 +17,31 @@
 
   --glass-fill: rgba(8, 11, 18, 0.88);
   --glass-fill-strong: rgba(6, 9, 16, 0.94);
-  --glass-stroke: rgba(255, 255, 255, 0.12);
-  --glass-stroke-soft: rgba(255, 255, 255, 0.09);
-  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
+  --glass-stroke: rgba(255, 255, 255, 0.08);
+  --glass-stroke-soft: rgba(255, 255, 255, 0.05);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(255, 255, 255, 0.02);
   --glass-shadow: 0 14px 28px rgba(4, 7, 16, 0.44);
-  --glass-blur: 10px;
+  --glass-blur: 14px;
 
+  --glow-accent: rgba(183,216,212,0.12);
+  --glow-accent2: rgba(184,171,206,0.10);
 }
 
+/* ══════════════════════════════════════════════
+   ПЛАВНЫЕ ПЕРЕХОДЫ
+══════════════════════════════════════════════ */
+*, *::before, *::after {
+  transition-property: background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 0s;
+  transition-timing-function: ease;
+}
+
+a, button, .nav-item, .stat-card, .transcription-card, .quiz-card,
+.transcript-card, .question-card, .option, .btn-primary, .btn-secondary,
+.btn-submit, .btn-start, .btn-next, .btn-yandex, .copy-btn, .tab-btn,
+.dropzone, .mobile-nav-item {
+  transition-duration: 0.2s;
+}
 
 /* ══════════════════════════════════════════════
    ДЕКОРАТИВНЫЙ ФОН (цветы)
@@ -57,9 +74,8 @@
   background-image: url('design-concepts/assets/flowers/flower-16.png');
 }
 
-
 /* ══════════════════════════════════════════════
-   GLASSMORPHISM (тёмная тема)
+   GLASSMORPHISM
 ══════════════════════════════════════════════ */
 [data-theme="dark"] .right,
 [data-theme="dark"] .sidebar,
@@ -95,7 +111,7 @@
   inset: 1px;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.008) 24%, transparent 52%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.008) 24%, transparent 52%);
   opacity: 0.34;
 }
 
@@ -106,7 +122,34 @@
 [data-theme="dark"] .input:focus { border-color: rgba(183,216,212,0.54) !important; }
 
 /* ══════════════════════════════════════════════
-   КНОПКИ (обе темы)
+   ЭФФЕКТЫ HOVER НА КАРТОЧКАХ
+══════════════════════════════════════════════ */
+.stat-card,
+.transcription-card,
+.quiz-card,
+.transcript-card {
+  position: relative;
+}
+
+.stat-card:hover {
+  border-color: rgba(183,216,212,0.22) !important;
+  box-shadow: var(--glass-inner), 0 14px 28px rgba(4, 7, 16, 0.44), 0 0 20px var(--glow-accent) !important;
+  transform: translateY(-2px);
+}
+
+.transcription-card:hover {
+  border-color: rgba(183,216,212,0.22) !important;
+  box-shadow: var(--glass-inner), 0 8px 24px rgba(4, 7, 16, 0.44), 0 0 16px var(--glow-accent) !important;
+}
+
+.quiz-card:hover {
+  border-color: rgba(184,171,206,0.22) !important;
+  box-shadow: var(--glass-inner), 0 8px 24px rgba(4, 7, 16, 0.44), 0 0 16px var(--glow-accent2) !important;
+  transform: translateY(-3px);
+}
+
+/* ══════════════════════════════════════════════
+   КНОПКИ
 ══════════════════════════════════════════════ */
 .btn-primary,
 .btn-submit,
@@ -114,23 +157,94 @@
 .btn-next,
 .btn-yandex {
   color: #0d1218 !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
-  background: linear-gradient(145deg, rgba(183,216,212,0.84), rgba(184,171,206,0.7)) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 10px 20px rgba(6,10,18,0.34) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: linear-gradient(145deg, rgba(183,216,212,0.88), rgba(184,171,206,0.72)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 20px rgba(6,10,18,0.34) !important;
 }
-
 
 .btn-primary:hover,
 .btn-submit:hover:not(:disabled),
 .btn-start:hover,
-.btn-next:hover { transform: translateY(-1px); }
+.btn-next:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 12px 28px rgba(183,216,212,0.2) !important;
+}
 
+.btn-primary:active,
+.btn-submit:active,
+.btn-start:active,
+.btn-next:active {
+  transform: translateY(0);
+}
+
+/* ══════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════ */
+.sidebar {
+  border-right-color: var(--glass-stroke) !important;
+}
+
+.nav-item.active {
+  background: rgba(183,216,212,0.10) !important;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.avatar {
+  box-shadow: 0 2px 8px rgba(183,216,212,0.2);
+}
+
+/* ══════════════════════════════════════════════
+   STAT CARDS — АКЦЕНТНЫЕ ПОЛОСКИ
+══════════════════════════════════════════════ */
+.stat-card {
+  overflow: hidden;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0.6;
+  border-radius: 16px 16px 0 0;
+}
+
+/* ══════════════════════════════════════════════
+   СКРОЛЛБАР
+══════════════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(166,177,204,0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(166,177,204,0.35);
+}
+
+/* ══════════════════════════════════════════════
+   SELECTION
+══════════════════════════════════════════════ */
+::selection {
+  background: rgba(183,216,212,0.25);
+  color: var(--text);
+}
 
 /* ══════════════════════════════════════════════
    РАЗНОЕ
 ══════════════════════════════════════════════ */
 .nav-item.nav-disabled {
-  opacity: 0.54;
+  opacity: 0.42;
   pointer-events: none;
   cursor: default;
 }
@@ -152,4 +266,3 @@ textarea:focus-visible {
   .bg::after { display: none; }
   .bg::before { opacity: 0.16; left: -4px; bottom: 12px; }
 }
-
